@@ -9,6 +9,9 @@ import { auth, isFirebaseConfigured } from '../lib/firebase';
 
 const AuthContext = createContext(null);
 
+// Only this email can access admin features
+const ADMIN_EMAIL = 'lolibunge@gmail.com';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +30,9 @@ export function AuthProvider({ children }) {
 
     return unsubscribe;
   }, []);
+
+  // Check if current user is admin
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   const login = async (email, password) => {
     if (!auth) throw new Error('Firebase not configured');
@@ -50,6 +56,7 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     isFirebaseConfigured,
+    isAdmin,
   };
 
   return (

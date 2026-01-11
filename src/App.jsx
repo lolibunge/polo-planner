@@ -8,6 +8,7 @@ import HorseDetail from './pages/HorseDetail';
 import Players from './pages/Players';
 import Practices from './pages/Practices';
 import PracticeDetail from './pages/PracticeDetail';
+import PublicPractices from './pages/PublicPractices';
 import './App.css';
 
 function App() {
@@ -15,6 +16,9 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public route - no login required */}
+          <Route path="/proximas" element={<PublicPractices />} />
+          
           <Route path="/login" element={<Login />} />
           <Route
             path="/"

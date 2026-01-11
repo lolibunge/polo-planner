@@ -115,7 +115,7 @@ function PracticeCard({ practice, onDelete }) {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr + 'T12:00:00');
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('es-ES', { 
       weekday: 'short', 
       month: 'short', 
       day: 'numeric' 
@@ -123,7 +123,9 @@ function PracticeCard({ practice, onDelete }) {
   };
 
   const chukkerCount = practice.chukkers?.length || 0;
-  const playerCount = practice.players?.length || 0;
+  // Count players from teams (A and B)
+  const teams = practice.teams || { A: [], B: [] };
+  const playerCount = (teams.A?.length || 0) + (teams.B?.length || 0);
 
   return (
     <div className="practice-card">

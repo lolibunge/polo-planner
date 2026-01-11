@@ -25,6 +25,7 @@ export default function Layout() {
           <Link to="/horses" className="nav-link">Caballos</Link>
           <Link to="/players" className="nav-link">Jugadores</Link>
           <Link to="/practices" className="nav-link">Prácticas</Link>
+          <Link to="/proximas" className="nav-link nav-link-public">📅 Próximas</Link>
         </nav>
         <div className="header-user">
           <span className="user-email">{user?.email}</span>

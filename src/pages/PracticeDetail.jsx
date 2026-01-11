@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   usePractice, 
   useHorses,
@@ -26,6 +27,7 @@ const TEAM_COLORS = {
 };
 
 export default function PracticeDetail() {
+    const { isAdmin } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const { practice, loading: practiceLoading, error: practiceError } = usePractice(id);
@@ -307,6 +309,8 @@ export default function PracticeDetail() {
   }
 
   const isEditable = true; // Allow editing even for completed practices
+  // Players who RSVP'd (confirmed attendance)
+  const confirmedPlayerIds = practice?.confirmedPlayers || [];
   const unassignedPlayers = players.filter(p => !allSelectedPlayerIds.includes(p.id));
 
   return (
@@ -320,9 +324,11 @@ export default function PracticeDetail() {
       <div className="practice-detail-header">
         <div className="practice-title">
           <h2>{practice.name || 'Práctica sin nombre'}</h2>
-          <button className="btn-icon btn-edit" onClick={() => setShowEditModal(true)} title="Editar práctica">
-            ✏️
-          </button>
+          {isAdmin && (
+            <button className="btn-icon btn-edit" onClick={() => setShowEditModal(true)} title="Editar práctica">
+              ✏️
+            </button>
+          )}
           <span className="practice-date-badge">{formatDate(practice.date)}</span>
           <span 
             className="status-badge status-badge-lg"
@@ -336,12 +342,12 @@ export default function PracticeDetail() {
           <button className="btn btn-whatsapp" onClick={handleShareWhatsApp}>
             📱 Compartir en WhatsApp
           </button>
-          {practice.status === 'planned' && (
+          {isAdmin && practice.status === 'planned' && (
             <button className="btn btn-warning" onClick={handleStartPractice}>
               ▶ Iniciar Práctica
             </button>
           )}
-          {practice.status === 'in-progress' && (
+          {isAdmin && practice.status === 'in-progress' && (
             <button 
               className="btn btn-success" 
               onClick={handleCompletePractice}
@@ -354,7 +360,7 @@ export default function PracticeDetail() {
       </div>
 
       {/* Edit Practice Modal */}
-      {showEditModal && (
+      {isAdmin && showEditModal && (
         <EditPracticeModal 
           practice={practice}
           practiceId={id}
@@ -380,7 +386,7 @@ export default function PracticeDetail() {
       {/* Team Builder */}
       <div className="practice-section">
         <h3>Equipos</h3>
-        {isEditable && (
+        {isAdmin && (
           <p className="section-hint">Cliquear botones para asignar jugadores a los equipos</p>
         )}
         
@@ -405,7 +411,7 @@ export default function PracticeDetail() {
                       <span className="player-name">{player.name}</span>
                       <span className="player-level">{player.level} HCP</span>
                     </div>
-                    {isEditable && (
+                    {isAdmin && (
                       <div className="player-actions">
                         <button 
                           className="btn-move"
@@ -459,7 +465,7 @@ export default function PracticeDetail() {
                       <span className="player-name">{player.name}</span>
                       <span className="player-level">{player.level} HCP</span>
                     </div>
-                    {isEditable && (
+                    {isAdmin && (
                       <div className="player-actions">
                         <button 
                           className="btn-move"
@@ -485,33 +491,97 @@ export default function PracticeDetail() {
         </div>
 
         {/* Unassigned Players */}
-        {isEditable && unassignedPlayers.length > 0 && (
+        {isAdmin && unassignedPlayers.length > 0 && (
           <div className="unassigned-players">
             <h5>Jugadores Disponibles</h5>
+            {/* Bulk add confirmed players button */}
+            {confirmedPlayerIds.length > 0 && (
+              <button
+                className="btn btn-sm btn-primary"
+                style={{ marginBottom: 12 }}
+                onClick={async () => {
+                  // Get current teams and already assigned players
+                  const currentTeams = practice.teams || { A: [], B: [] };
+                  const alreadyAssigned = [...(currentTeams.A || []), ...(currentTeams.B || [])];
+                  // Get confirmed players not already assigned
+                  const toAdd = confirmedPlayerIds.filter(pid => !alreadyAssigned.includes(pid));
+                  if (toAdd.length === 0) {
+                    alert('Todos los jugadores confirmados ya están asignados a un equipo.');
+                    return;
+                  }
+                  // Get player objects for those to add
+                  const confirmedPlayers = players.filter(p => toAdd.includes(p.id));
+                  // Sort by handicap descending for better balance
+                  confirmedPlayers.sort((a, b) => (b.level || 0) - (a.level || 0));
+                  // Start with current teams
+                  let teamA = [...(currentTeams.A || [])];
+                  let teamB = [...(currentTeams.B || [])];
+                  let sumA = teamA.map(pid => (players.find(p => p.id === pid)?.level || 0)).reduce((a, b) => a + b, 0);
+                  let sumB = teamB.map(pid => (players.find(p => p.id === pid)?.level || 0)).reduce((a, b) => a + b, 0);
+                  // Greedy assign: always add next player to team with lower total handicap
+                  confirmedPlayers.forEach(player => {
+                    if (sumA <= sumB) {
+                      teamA.push(player.id);
+                      sumA += player.level || 0;
+                    } else {
+                      teamB.push(player.id);
+                      sumB += player.level || 0;
+                    }
+                  });
+                  // Update teams in Firestore
+                  try {
+                    await updatePractice(practice.id, { teams: { A: teamA, B: teamB } });
+                    alert('Jugadores confirmados asignados automáticamente a los equipos balanceando el hándicap.');
+                  } catch (err) {
+                    alert('Error al asignar equipos automáticamente.');
+                  }
+                }}
+              >
+                Añadir todos los confirmados
+              </button>
+            )}
             <div className="player-chips">
-              {unassignedPlayers.map(player => (
-                <div key={player.id} className="unassigned-player">
-                  <span className="player-name">{player.name}</span>
-                  <span className="player-level">{player.level} HCP</span>
-                  <div className="assign-buttons">
-                    <button 
-                      className="btn-assign"
-                      style={{ background: TEAM_COLORS.A.bg }}
-                      onClick={() => handleAssignToTeam(player.id, 'A')}
-                    >
-                      + Azul
-                    </button>
-                    <button 
-                      className="btn-assign"
-                      style={{ background: TEAM_COLORS.B.bg }}
-                      onClick={() => handleAssignToTeam(player.id, 'B')}
-                    >
-                      + Rojo
-                    </button>
+              {unassignedPlayers.map(player => {
+                const isConfirmed = confirmedPlayerIds.includes(player.id);
+                return (
+                  <div key={player.id} className={`unassigned-player${isConfirmed ? ' confirmed-player' : ''}`.trim()}>
+                    <span className="player-name">
+                      {player.name}
+                      {isConfirmed && <span className="confirmed-badge" title="Confirmado (RSVP)"> ✔</span>}
+                    </span>
+                    <span className="player-level">{player.level} HCP</span>
+                    <div className="assign-buttons">
+                      <button 
+                        className="btn-assign"
+                        style={{ background: TEAM_COLORS.A.bg }}
+                        onClick={() => handleAssignToTeam(player.id, 'A')}
+                      >
+                        + Azul
+                      </button>
+                      <button 
+                        className="btn-assign"
+                        style={{ background: TEAM_COLORS.B.bg }}
+                        onClick={() => handleAssignToTeam(player.id, 'B')}
+                      >
+                        + Rojo
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            <style>{`
+              .confirmed-player .player-name {
+                font-weight: bold;
+                color: #22c55e;
+              }
+              .confirmed-badge {
+                margin-left: 4px;
+                color: #22c55e;
+                font-size: 1.1em;
+                vertical-align: middle;
+              }
+            `}</style>
           </div>
         )}
       </div>
@@ -520,7 +590,7 @@ export default function PracticeDetail() {
       <div className="practice-section">
         <div className="section-header">
           <h3>Chukkers ({practice.chukkers?.length || 0})</h3>
-          {isEditable && (
+          {isAdmin && (
             <button className="btn btn-secondary btn-sm" onClick={handleAddChukker}>
               + Agregar Chukker
             </button>
@@ -537,7 +607,7 @@ export default function PracticeDetail() {
               <div key={chukker.number} className="chukker-card">
                 <div className="chukker-header">
                   <h4>Chukker {chukker.number}</h4>
-                  {isEditable && practice.chukkers.length > 1 && (
+                  {isAdmin && practice.chukkers.length > 1 && (
                     <button 
                       className="btn-icon" 
                       onClick={() => handleRemoveChukker(chukkerIndex)}
@@ -559,6 +629,7 @@ export default function PracticeDetail() {
                         value={chukker.scoreA || 0}
                         onChange={(e) => handleUpdateScore(chukkerIndex, 'A', e.target.value)}
                         className="score-input score-input-a"
+                        disabled={!isAdmin}
                       />
                     </div>
                     <span className="chukker-score-divider">:</span>
@@ -569,6 +640,7 @@ export default function PracticeDetail() {
                         value={chukker.scoreB || 0}
                         onChange={(e) => handleUpdateScore(chukkerIndex, 'B', e.target.value)}
                         className="score-input score-input-b"
+                        disabled={!isAdmin}
                       />
                       <span className="score-label" style={{ color: TEAM_COLORS.B.bg }}>Rojo</span>
                     </div>
@@ -590,7 +662,7 @@ export default function PracticeDetail() {
                         availableHorses={availableHorses}
                         horseUsageCount={horseUsageCount}
                         getHorse={getHorse}
-                        isEditable={isEditable}
+                        isEditable={isAdmin}
                         onAssign={handleAssignHorse}
                         teamColor={TEAM_COLORS.A.bg}
                       />
@@ -613,7 +685,7 @@ export default function PracticeDetail() {
                         availableHorses={availableHorses}
                         horseUsageCount={horseUsageCount}
                         getHorse={getHorse}
-                        isEditable={isEditable}
+                        isEditable={isAdmin}
                         onAssign={handleAssignHorse}
                         teamColor={TEAM_COLORS.B.bg}
                       />
