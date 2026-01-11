@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
+// Admin email - only this user can access admin panel
+const ADMIN_EMAIL = 'lolibunge@gmail.com';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,12 +21,19 @@ export default function Login() {
     setLoading(true);
 
     try {
+      let userCred;
       if (isSignup) {
-        await signup(email, password);
+        userCred = await signup(email, password);
       } else {
-        await login(email, password);
+        userCred = await login(email, password);
       }
-      navigate('/horses');
+      // Use authenticated user email for admin check
+      const userEmail = userCred?.user?.email || email;
+      if (userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        navigate('/horses');
+      } else {
+        navigate('/proximas');
+      }
     } catch (err) {
       setError(getErrorMessage(err.code));
     } finally {
@@ -34,21 +44,21 @@ export default function Login() {
   const getErrorMessage = (code) => {
     switch (code) {
       case 'auth/invalid-email':
-        return 'Invalid email address.';
+        return 'Correo electrónico inválido.';
       case 'auth/user-disabled':
-        return 'This account has been disabled.';
+        return 'Esta cuenta ha sido deshabilitada.';
       case 'auth/user-not-found':
-        return 'No account found with this email.';
+        return 'No existe una cuenta con este correo.';
       case 'auth/wrong-password':
-        return 'Incorrect password.';
+        return 'Contraseña incorrecta.';
       case 'auth/email-already-in-use':
-        return 'An account with this email already exists.';
+        return 'Ya existe una cuenta con este correo.';
       case 'auth/weak-password':
-        return 'Password should be at least 6 characters.';
+        return 'La contraseña debe tener al menos 6 caracteres.';
       case 'auth/invalid-credential':
-        return 'Invalid email or password.';
+        return 'Correo o contraseña inválidos.';
       default:
-        return 'An error occurred. Please try again.';
+        return 'Ocurrió un error. Intenta nuevamente.';
     }
   };
 
@@ -60,7 +70,7 @@ export default function Login() {
           <div className="login-header">
             <span className="login-icon">🐎</span>
             <h1>Polo Planner</h1>
-            <p>Horse workload & welfare management</p>
+            <p>Gestión de workload y bienestar de caballos</p>
           </div>
 
           <div className="setup-instructions">
@@ -96,26 +106,26 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
         <div className="login-header">
           <span className="login-icon">🐎</span>
           <h1>Polo Planner</h1>
-          <p>Horse workload & welfare management</p>
+          <p>Gestión de workload y bienestar de caballos</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
           
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Correo electrónico</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="tucorreo@ejemplo.com"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Contraseña</label>
             <input
               type="password"
               id="password"
@@ -128,7 +138,7 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
           </div>
 
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Sign In')}
+            {loading ? 'Por favor espera...' : (isSignup ? 'Crear cuenta' : 'Iniciar sesión')}
           </button>
         </form>
 
@@ -138,8 +148,11 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
             className="btn-link"
             onClick={() => setIsSignup(!isSignup)}
           >
-            {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            {isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
           </button>
+          <Link to="/proximas" className="btn-link public-link">
+            📅 Ver próximas prácticas (sin login)
+          </Link>
         </div>
       </div>
     </div>
