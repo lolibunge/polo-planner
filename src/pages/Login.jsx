@@ -70,7 +70,7 @@ export default function Login() {
           <div className="login-header">
             <span className="login-icon">🐎</span>
             <h1>Polo Planner</h1>
-            <p>Gestión de la carga de trabajo y bienestar de caballos</p>
+            <p>Gestión de prácticas, carga de trabajo y bienestar de caballos</p>
           </div>
 
           <div className="setup-instructions">
@@ -106,7 +106,7 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
         <div className="login-header">
           <span className="login-icon">🐎</span>
           <h1>Polo Planner</h1>
-          <p>Gestión de la carga de trabajo y bienestar de caballos</p>
+          <p>Gestión de prácticas, carga de trabajo y bienestar de caballos</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
