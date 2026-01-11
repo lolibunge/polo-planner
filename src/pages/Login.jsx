@@ -150,9 +150,6 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
           >
             {isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
           </button>
-          <Link to="/proximas" className="btn-link public-link">
-            📅 Ver próximas prácticas (sin login)
-          </Link>
         </div>
       </div>
     </div>
