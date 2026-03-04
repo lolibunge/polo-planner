@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 // Admin email - only this user can access admin panel
@@ -14,6 +14,8 @@ export default function Login() {
   
   const { login, signup, isFirebaseConfigured } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +34,11 @@ export default function Login() {
       if (userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         navigate('/horses');
       } else {
-        navigate('/proximas');
+        if (from && typeof from === 'string' && from.startsWith('/proximas')) {
+          navigate(from);
+        } else {
+          navigate('/proximas');
+        }
       }
     } catch (err) {
       setError(getErrorMessage(err.code));

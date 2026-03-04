@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { usePractices, usePlayers, updatePractice } from '../hooks/useFirestore';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,16 +12,27 @@ export default function PublicPractices() {
   const { practices, loading: practicesLoading } = usePractices();
   const { players, loading: playersLoading } = usePlayers();
   const { user, logout, isAdmin } = useAuth();
+  const location = useLocation();
     if (!user) {
       return (
         <div className="public-practices-login">
           <h2>Próximas Prácticas</h2>
           <p>Debes iniciar sesión para ver las prácticas.</p>
-          <Link to="/login" className="btn btn-primary">Iniciar sesión</Link>
+          <Link
+            to="/login"
+            state={{ from: location.pathname + location.search }}
+            className="btn btn-primary"
+          >
+            Iniciar sesión
+          </Link>
         </div>
       );
     }
   const navigate = useNavigate();
+  const practiceIdFromLink = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('practice') || '';
+  }, [location.search]);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [savingPracticeId, setSavingPracticeId] = useState(null);
 
@@ -43,11 +54,17 @@ export default function PublicPractices() {
   // Only show upcoming practices (planned or in-progress)
   const upcomingPractices = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    return practices
+    const filtered = practices
       .filter(p => p.status === 'planned' || p.status === 'in-progress')
       .filter(p => p.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [practices]);
+
+    if (practiceIdFromLink) {
+      return filtered.filter(p => p.id === practiceIdFromLink);
+    }
+
+    return filtered;
+  }, [practices, practiceIdFromLink]);
 
   const getPlayer = (playerId) => players.find(p => p.id === playerId);
 

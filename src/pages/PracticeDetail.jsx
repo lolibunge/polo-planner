@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getPracticeRsvpUrl } from '../lib/whatsapp';
 import { 
   usePractice, 
   useHorses,
@@ -218,7 +219,10 @@ export default function PracticeDetail() {
     
     // Header
     lines.push(`🏇 *${practice.name || 'Práctica'}*`);
-    lines.push(`📅 ${formatDate(practice.date)}`);
+    lines.push(`📅 Fecha: ${formatDate(practice.date)}`);
+    lines.push('');
+    lines.push('✅ Confirmá asistencia acá:');
+    lines.push(getPracticeRsvpUrl(practice.id));
     lines.push('');
     
     // Teams
