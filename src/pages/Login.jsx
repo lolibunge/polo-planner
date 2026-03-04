@@ -82,10 +82,10 @@ export default function Login() {
               <li>Enable <strong>Authentication</strong> → Email/Password</li>
               <li>Create a <strong>Firestore Database</strong></li>
               <li>Go to Project Settings → Your apps → Web app</li>
-              <li>Copy the config values to your <code>.env</code> file</li>
+              <li>Copy the config values to your <code>.env.local</code> file</li>
             </ol>
             <div className="env-example">
-              <strong>.env file:</strong>
+              <strong>.env.local file:</strong>
               <pre>{`VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
@@ -93,7 +93,7 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
 VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
             </div>
-            <p className="setup-note">After updating <code>.env</code>, restart the dev server.</p>
+            <p className="setup-note">After updating <code>.env.local</code>, restart the dev server.</p>
           </div>
         </div>
       </div>

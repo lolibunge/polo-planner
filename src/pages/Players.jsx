@@ -106,6 +106,10 @@ function PlayerCard({ player, onEdit }) {
           </span>
         </div>
       </div>
+
+      {player.email && (
+        <p className="player-notes">{player.email}</p>
+      )}
       
       {player.notes && (
         <p className="player-notes">{player.notes}</p>
@@ -127,6 +131,7 @@ function PlayerModal({ player, onClose }) {
   const [formData, setFormData] = useState({
     name: player?.name || '',
     level: player?.level ?? 0,
+    email: player?.email || '',
     notes: player?.notes || ''
   });
   const [saving, setSaving] = useState(false);
@@ -184,6 +189,18 @@ function PlayerModal({ player, onClose }) {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               placeholder="Nombre del jugador"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email (opcional)</label>
+            <input
+              type="email"
+              id="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="jugador@ejemplo.com"
+              autoComplete="email"
             />
           </div>
 

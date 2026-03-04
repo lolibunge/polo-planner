@@ -27,6 +27,10 @@ export default function PublicPractices() {
 
   const loading = practicesLoading || playersLoading;
 
+  const normalizedUserEmail = (user?.email || '').trim().toLowerCase();
+  const linkedPlayer = players.find(p => (p.email || '').trim().toLowerCase() === normalizedUserEmail) || null;
+  const effectivePlayerId = isAdmin ? selectedPlayer : (linkedPlayer?.id || '');
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -52,23 +56,27 @@ export default function PublicPractices() {
   };
 
   const handleConfirmAttendance = async (practice) => {
-    if (!selectedPlayer) {
-      alert('Por favor selecciona tu nombre');
+    if (!effectivePlayerId) {
+      alert(
+        isAdmin
+          ? 'Por favor selecciona un jugador'
+          : 'Tu usuario no está vinculado a un jugador. Pide al admin que agregue tu email en Jugadores.'
+      );
       return;
     }
 
     setSavingPracticeId(practice.id);
     try {
       const currentConfirmed = practice.confirmedPlayers || [];
-      const isAlreadyConfirmed = currentConfirmed.includes(selectedPlayer);
+      const isAlreadyConfirmed = currentConfirmed.includes(effectivePlayerId);
       
       let newConfirmed;
       if (isAlreadyConfirmed) {
         // Remove player
-        newConfirmed = currentConfirmed.filter(id => id !== selectedPlayer);
+        newConfirmed = currentConfirmed.filter(id => id !== effectivePlayerId);
       } else {
         // Add player
-        newConfirmed = [...currentConfirmed, selectedPlayer];
+        newConfirmed = [...currentConfirmed, effectivePlayerId];
       }
 
       await updatePractice(practice.id, { confirmedPlayers: newConfirmed });
@@ -118,23 +126,37 @@ export default function PublicPractices() {
         )}
       </header>
 
-      {/* Player selector */}
-      <div className="player-selector-container">
-        <label htmlFor="player-select">¿Quién eres?</label>
-        <select 
-          id="player-select"
-          value={selectedPlayer}
-          onChange={(e) => setSelectedPlayer(e.target.value)}
-          className="player-selector"
-        >
-          <option value="">-- Selecciona tu nombre --</option>
-          {players.map(player => (
-            <option key={player.id} value={player.id}>
-              {player.name} ({player.level} HCP)
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Player selector (admin only). Non-admin users are auto-linked by email. */}
+      {isAdmin ? (
+        <div className="player-selector-container">
+          <label htmlFor="player-select">¿Quién eres?</label>
+          <select 
+            id="player-select"
+            value={selectedPlayer}
+            onChange={(e) => setSelectedPlayer(e.target.value)}
+            className="player-selector"
+          >
+            <option value="">-- Selecciona un jugador --</option>
+            {players.map(player => (
+              <option key={player.id} value={player.id}>
+                {player.name} ({player.level} HCP)
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className="player-selector-container">
+          <label>Jugador</label>
+          <div className="player-selector">
+            {linkedPlayer ? `${linkedPlayer.name} (${linkedPlayer.level} HCP)` : user.email}
+          </div>
+          {!linkedPlayer && (
+            <p className="rsvp-hint">
+              Pide al admin que agregue tu email en “Jugadores” para vincular tu cuenta.
+            </p>
+          )}
+        </div>
+      )}
 
       {upcomingPractices.length === 0 ? (
         <div className="empty-state">
@@ -147,7 +169,7 @@ export default function PublicPractices() {
           {upcomingPractices.map(practice => {
             const confirmedPlayers = practice.confirmedPlayers || [];
             const confirmedPlayersData = confirmedPlayers.map(id => getPlayer(id)).filter(Boolean);
-            const isCurrentPlayerConfirmed = selectedPlayer && isPlayerConfirmed(practice, selectedPlayer);
+            const isCurrentPlayerConfirmed = effectivePlayerId && isPlayerConfirmed(practice, effectivePlayerId);
             const isSaving = savingPracticeId === practice.id;
 
             // Get team assignments
@@ -218,7 +240,7 @@ export default function PublicPractices() {
 
                 {/* RSVP button */}
                 <div className="rsvp-section">
-                  {selectedPlayer ? (
+                  {effectivePlayerId ? (
                     <button 
                       className={`btn btn-rsvp ${isCurrentPlayerConfirmed ? 'confirmed' : ''}`}
                       onClick={() => handleConfirmAttendance(practice)}
@@ -229,7 +251,11 @@ export default function PublicPractices() {
                        'Confirmar Asistencia'}
                     </button>
                   ) : (
-                    <p className="rsvp-hint">Selecciona tu nombre arriba para confirmar asistencia</p>
+                    <p className="rsvp-hint">
+                      {isAdmin
+                        ? 'Selecciona un jugador arriba para confirmar asistencia'
+                        : 'Tu cuenta no está vinculada a un jugador'}
+                    </p>
                   )}
                 </div>
               </div>
