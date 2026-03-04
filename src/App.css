@@ -1109,7 +1109,19 @@ a:hover {
   .header-nav {
     order: 3;
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .header-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .header-user {
@@ -1789,6 +1801,16 @@ a:hover {
   background: var(--color-bg);
   border-radius: var(--radius-md);
   border: 1px dashed var(--color-border);
+  cursor: pointer;
+}
+
+.unassigned-player:hover {
+  border-color: var(--color-border-light);
+}
+
+.unassigned-player:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .unassigned-player .player-name {

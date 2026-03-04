@@ -313,6 +313,23 @@ export default function PracticeDetail() {
   const confirmedPlayerIds = practice?.confirmedPlayers || [];
   const unassignedPlayers = players.filter(p => !allSelectedPlayerIds.includes(p.id));
 
+  const handleToggleConfirmPlayer = async (playerId) => {
+    if (!isAdmin) return;
+    const currentConfirmed = practice?.confirmedPlayers || [];
+    const isConfirmed = currentConfirmed.includes(playerId);
+
+    try {
+      await updatePractice(practice.id, {
+        confirmedPlayers: isConfirmed
+          ? currentConfirmed.filter(id => id !== playerId)
+          : Array.from(new Set([...currentConfirmed, playerId]))
+      });
+    } catch (err) {
+      console.error('Error toggling RSVP:', err);
+      alert('Error al actualizar confirmación.');
+    }
+  };
+
   return (
     <div className="practice-detail-page">
       <div className="page-header">
@@ -408,7 +425,21 @@ export default function PracticeDetail() {
                       {player.name.charAt(0)}
                     </span>
                     <div className="player-info">
-                      <span className="player-name">{player.name}</span>
+                      <button
+                        type="button"
+                        className={`player-name player-name-btn${confirmedPlayerIds.includes(player.id) ? ' confirmed-player-name' : ''}`}
+                        title={confirmedPlayerIds.includes(player.id) ? 'Quitar confirmación (RSVP)' : 'Marcar como confirmado (RSVP)'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleConfirmPlayer(player.id);
+                        }}
+                        aria-pressed={confirmedPlayerIds.includes(player.id)}
+                      >
+                        {player.name}
+                        {confirmedPlayerIds.includes(player.id) && (
+                          <span className="confirmed-badge" title="Confirmado (RSVP)"> ✔</span>
+                        )}
+                      </button>
                       <span className="player-level">{player.level} HCP</span>
                     </div>
                     {isAdmin && (
@@ -462,7 +493,21 @@ export default function PracticeDetail() {
                       {player.name.charAt(0)}
                     </span>
                     <div className="player-info">
-                      <span className="player-name">{player.name}</span>
+                      <button
+                        type="button"
+                        className={`player-name player-name-btn${confirmedPlayerIds.includes(player.id) ? ' confirmed-player-name' : ''}`}
+                        title={confirmedPlayerIds.includes(player.id) ? 'Quitar confirmación (RSVP)' : 'Marcar como confirmado (RSVP)'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleConfirmPlayer(player.id);
+                        }}
+                        aria-pressed={confirmedPlayerIds.includes(player.id)}
+                      >
+                        {player.name}
+                        {confirmedPlayerIds.includes(player.id) && (
+                          <span className="confirmed-badge" title="Confirmado (RSVP)"> ✔</span>
+                        )}
+                      </button>
                       <span className="player-level">{player.level} HCP</span>
                     </div>
                     {isAdmin && (
@@ -544,28 +589,35 @@ export default function PracticeDetail() {
               {unassignedPlayers.map(player => {
                 const isConfirmed = confirmedPlayerIds.includes(player.id);
                 return (
-                  <div key={player.id} className={`unassigned-player${isConfirmed ? ' confirmed-player' : ''}`.trim()}>
-                    <span className="player-name">
+                  <div
+                    key={player.id}
+                    className={`unassigned-player${isConfirmed ? ' confirmed-player' : ''}`.trim()}
+                    onClick={() => handleAssignToTeam(player.id, 'A')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleAssignToTeam(player.id, 'A');
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className={`player-name player-name-btn${isConfirmed ? ' confirmed-player-name' : ''}`}
+                      title={isConfirmed ? 'Quitar confirmación (RSVP)' : 'Marcar como confirmado (RSVP)'}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleConfirmPlayer(player.id);
+                      }}
+                      aria-pressed={isConfirmed}
+                    >
                       {player.name}
-                      {isConfirmed && <span className="confirmed-badge" title="Confirmado (RSVP)"> ✔</span>}
-                    </span>
+                      {isConfirmed && (
+                        <span className="confirmed-badge" title="Confirmado (RSVP)"> ✔</span>
+                      )}
+                    </button>
                     <span className="player-level">{player.level} HCP</span>
-                    <div className="assign-buttons">
-                      <button 
-                        className="btn-assign"
-                        style={{ background: TEAM_COLORS.A.bg }}
-                        onClick={() => handleAssignToTeam(player.id, 'A')}
-                      >
-                        + Azul
-                      </button>
-                      <button 
-                        className="btn-assign"
-                        style={{ background: TEAM_COLORS.B.bg }}
-                        onClick={() => handleAssignToTeam(player.id, 'B')}
-                      >
-                        + Rojo
-                      </button>
-                    </div>
                   </div>
                 );
               })}
@@ -580,6 +632,21 @@ export default function PracticeDetail() {
                 color: #22c55e;
                 font-size: 1.1em;
                 vertical-align: middle;
+              }
+              .player-name-btn {
+                background: transparent;
+                border: 0;
+                padding: 0;
+                color: inherit;
+                cursor: pointer;
+                text-align: left;
+              }
+              .player-name-btn:hover {
+                text-decoration: underline;
+              }
+              .confirmed-player-name {
+                font-weight: bold;
+                color: #22c55e;
               }
             `}</style>
           </div>
