@@ -4,7 +4,7 @@ const getPublicAppUrl = () => {
     return String(configured).replace(/\/$/, '');
   }
   // Fallback: production app URL (so shared links never point to localhost)
-  return 'https://polo-planner-isico5dme-lolibunges-projects.vercel.app';
+  return 'https://polo-planner.vercel.app';
 };
 
 export const getPracticeRsvpUrl = (_practiceId) => {
