@@ -6,6 +6,7 @@ import {
   deletePractice,
   getTodayDateString 
 } from '../hooks/useFirestore';
+import { buildPracticeWhatsAppMessage, openWhatsAppShare } from '../lib/whatsapp';
 
 const STATUS_COLORS = {
   'planned': '#3b82f6',
@@ -175,27 +176,66 @@ function NewPracticeModal({ onClose }) {
   });
   const [saving, setSaving] = useState(false);
 
+  const formatDateForMessage = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const createPractice = async () => {
+    // Create empty chukkers array
+    const chukkers = Array.from({ length: formData.chukkerCount }, (_, i) => ({
+      number: i + 1,
+      assignments: [] // Will hold { playerId, horseId } pairs
+    }));
+
+    return addPractice({
+      name: formData.name,
+      date: formData.date,
+      chukkers,
+      players: [] // Selected players for this practice
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
     try {
-      // Create empty chukkers array
-      const chukkers = Array.from({ length: formData.chukkerCount }, (_, i) => ({
-        number: i + 1,
-        assignments: [] // Will hold { playerId, horseId } pairs
-      }));
-
-      await addPractice({
-        name: formData.name,
-        date: formData.date,
-        chukkers,
-        players: [] // Selected players for this practice
-      });
+      await createPractice();
       onClose();
     } catch (err) {
       console.error('Error creating practice:', err);
       alert('Failed to create practice');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateAndShare = async () => {
+    if (saving) return;
+
+    // Open a window immediately (user gesture) to avoid popup blockers.
+    const preOpenedWindow = window.open('', '_blank');
+
+    setSaving(true);
+    try {
+      const docRef = await createPractice();
+      const message = buildPracticeWhatsAppMessage({
+        practiceId: docRef.id,
+        name: formData.name,
+        dateLabel: formatDateForMessage(formData.date)
+      });
+      openWhatsAppShare(message, { preOpenedWindow });
+      onClose();
+    } catch (err) {
+      console.error('Error creating practice:', err);
+      alert('Failed to create practice');
+      if (preOpenedWindow && !preOpenedWindow.closed) preOpenedWindow.close();
     } finally {
       setSaving(false);
     }
@@ -249,6 +289,9 @@ function NewPracticeModal({ onClose }) {
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancelar
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={handleCreateAndShare} disabled={saving}>
+              {saving ? 'Creando...' : 'Crear y Compartir'}
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
               {saving ? 'Creando...' : 'Crear Práctica'}
