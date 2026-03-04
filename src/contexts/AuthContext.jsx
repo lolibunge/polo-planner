@@ -42,13 +42,19 @@ const derivePlayerNameFromEmail = (emailLower) => {
     .join(' ') || 'Jugador';
 };
 
-async function ensurePlayerRecordForUser(firebaseUser) {
+async function ensurePlayerRecordForUser(firebaseUser, profile = {}) {
   if (!db || !firebaseUser) return;
 
   const uid = firebaseUser.uid;
   const email = String(firebaseUser.email || '').trim();
   const emailLower = normalizeEmail(email);
   if (!uid || !emailLower) return;
+
+  // Admin user is not a Player.
+  if (emailLower === ADMIN_EMAIL_LOWER) return;
+
+  const levelFromProfile = Number.isFinite(profile?.level) ? profile.level : undefined;
+  const notesFromProfile = typeof profile?.notes === 'string' ? profile.notes.trim() : '';
 
   const playersCol = collection(db, `barns/${BARN_ID}/players`);
 
@@ -82,6 +88,13 @@ async function ensurePlayerRecordForUser(firebaseUser) {
     if (String(data.emailLower || '') !== emailLower) patch.emailLower = emailLower;
     if (data.active !== true) patch.active = true;
 
+    if (levelFromProfile !== undefined && typeof data.level !== 'number') {
+      patch.level = levelFromProfile;
+    }
+    if (notesFromProfile && !String(data.notes || '').trim()) {
+      patch.notes = notesFromProfile;
+    }
+
     if (Object.keys(patch).length > 0) {
       patch.updatedAt = serverTimestamp();
       await updateDoc(playerRef, patch);
@@ -104,7 +117,8 @@ async function ensurePlayerRecordForUser(firebaseUser) {
     await setDoc(playerRef, {
       ...baseData,
       name: derivePlayerNameFromEmail(emailLower),
-      level: 0,
+      level: levelFromProfile ?? 0,
+      ...(notesFromProfile ? { notes: notesFromProfile } : {}),
       createdAt: serverTimestamp(),
     });
     return;
@@ -117,7 +131,8 @@ async function ensurePlayerRecordForUser(firebaseUser) {
   if (String(existingData.emailLower || '') !== emailLower) update.emailLower = emailLower;
   if (existingData.active !== true) update.active = true;
   if (!existingData.name) update.name = derivePlayerNameFromEmail(emailLower);
-  if (typeof existingData.level !== 'number') update.level = 0;
+  if (typeof existingData.level !== 'number') update.level = levelFromProfile ?? 0;
+  if (notesFromProfile && !String(existingData.notes || '').trim()) update.notes = notesFromProfile;
 
   if (Object.keys(update).length > 0) {
     update.updatedAt = serverTimestamp();
@@ -150,24 +165,25 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !user?.uid) return;
+    if (isAdmin) return;
     if (lastEnsuredUidRef.current === user.uid) return;
     lastEnsuredUidRef.current = user.uid;
 
     ensurePlayerRecordForUser(user).catch((err) => {
       console.warn('Could not auto-provision player record:', err);
     });
-  }, [user?.uid, isFirebaseConfigured, user]);
+  }, [user?.uid, isFirebaseConfigured, user, isAdmin]);
 
   const login = async (email, password) => {
     if (!auth) throw new Error('Firebase not configured');
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email, password) => {
+  const signup = async (email, password, profile = {}) => {
     if (!auth) throw new Error('Firebase not configured');
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     // Best-effort: create/link a Player record so the user can RSVP immediately.
-    ensurePlayerRecordForUser(cred.user).catch((err) => {
+    ensurePlayerRecordForUser(cred.user, profile).catch((err) => {
       console.warn('Could not auto-provision player record after signup:', err);
     });
     return cred;

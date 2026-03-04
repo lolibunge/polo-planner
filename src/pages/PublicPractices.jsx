@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { usePractices, usePlayers, updatePractice } from '../hooks/useFirestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,6 +61,14 @@ export default function PublicPractices() {
     } catch (error) {
       console.error('Error logging out:', error);
     }
+  };
+
+  const handleGoHome = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoProfile = () => {
+    navigate('/perfil');
   };
 
   // Only show upcoming practices (planned or in-progress)
@@ -148,6 +156,39 @@ export default function PublicPractices() {
         {user && (
           <div className="public-user-info">
             <span className="user-email-badge">{user.email}</span>
+
+            <div className="public-nav-icons">
+              <button
+                type="button"
+                className="public-icon-btn"
+                onClick={handleGoHome}
+                aria-label="Ir al inicio"
+                title="Inicio"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M12 3.172 2.636 10.3a1 1 0 0 0-.2 1.4 1 1 0 0 0 1.4.2L5 11.06V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-5h2v5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8.94l1.164.84a1 1 0 1 0 1.2-1.6L12 3.172Z"
+                  />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                className="public-icon-btn"
+                onClick={handleGoProfile}
+                aria-label="Ir a mi perfil"
+                title="Mi perfil"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0-7a2.5 2.5 0 1 1-2.5 2.5A2.503 2.503 0 0 1 12 5Zm0 9c-4.411 0-8 2.243-8 5a1 1 0 0 0 2 0c0-1.347 2.655-3 6-3s6 1.653 6 3a1 1 0 0 0 2 0c0-2.757-3.589-5-8-5Z"
+                  />
+                </svg>
+              </button>
+            </div>
+
             <button onClick={handleLogout} className="btn btn-sm btn-logout">
               Cerrar sesión
             </button>
