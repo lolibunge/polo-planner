@@ -22,7 +22,8 @@ import { auth, db, isFirebaseConfigured } from '../lib/firebase';
 const AuthContext = createContext(null);
 
 // Only this email can access admin features
-const ADMIN_EMAIL = 'lolibunge@gmail.com';
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'lolibunge@gmail.com').trim();
+const ADMIN_EMAIL_LOWER = ADMIN_EMAIL.toLowerCase();
 
 const BARN_ID = import.meta.env.VITE_BARN_ID || 'main-barn';
 
@@ -145,7 +146,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Check if current user is admin
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL_LOWER;
 
   useEffect(() => {
     if (!isFirebaseConfigured || !user?.uid) return;

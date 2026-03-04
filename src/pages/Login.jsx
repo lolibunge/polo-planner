@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 // Admin email - only this user can access admin panel
-const ADMIN_EMAIL = 'lolibunge@gmail.com';
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'lolibunge@gmail.com').trim();
 
 export default function Login() {
   const [email, setEmail] = useState('');

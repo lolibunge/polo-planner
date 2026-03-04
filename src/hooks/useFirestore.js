@@ -15,6 +15,9 @@ import {
 import { db } from '../lib/firebase';
 
 const BARN_ID = import.meta.env.VITE_BARN_ID || 'main-barn';
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'lolibunge@gmail.com').trim().toLowerCase();
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 // ============ HORSES ============
 
@@ -200,7 +203,10 @@ export function usePlayers() {
         const playersData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).filter(p => {
+          const emailLower = normalizeEmail(p.emailLower || p.email);
+          return emailLower !== ADMIN_EMAIL;
+        });
         setPlayers(playersData);
         setLoading(false);
       },
