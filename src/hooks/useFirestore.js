@@ -238,14 +238,21 @@ export async function addPlayer(playerData) {
 
 export async function updatePlayer(playerId, playerData) {
   const playerRef = doc(db, `barns/${BARN_ID}/players`, playerId);
-  const email = (playerData?.email || '').trim();
-  const emailLower = email ? email.toLowerCase() : '';
-  return updateDoc(playerRef, {
+
+  const patch = {
     ...playerData,
-    ...(email ? { email } : { email: '' }),
-    ...(emailLower ? { emailLower } : { emailLower: '' }),
-    updatedAt: serverTimestamp()
-  });
+    updatedAt: serverTimestamp(),
+  };
+
+  // Only update email fields if the caller provided them.
+  if (Object.prototype.hasOwnProperty.call(playerData || {}, 'email')) {
+    const email = (playerData?.email || '').trim();
+    const emailLower = email ? email.toLowerCase() : '';
+    patch.email = email;
+    patch.emailLower = emailLower;
+  }
+
+  return updateDoc(playerRef, patch);
 }
 
 export async function deletePlayer(playerId) {

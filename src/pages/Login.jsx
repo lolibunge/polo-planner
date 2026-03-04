@@ -9,6 +9,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignup, setIsSignup] = useState(false);
+  const [handicap, setHandicap] = useState('0');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -25,7 +27,13 @@ export default function Login() {
     try {
       let userCred;
       if (isSignup) {
-        userCred = await signup(email, password);
+        const parsed = parseFloat(String(handicap).replace(',', '.'));
+        const level = Number.isFinite(parsed) ? parsed : 0;
+        const notes = String(description || '').trim();
+        userCred = await signup(email, password, {
+          level,
+          notes,
+        });
       } else {
         userCred = await login(email, password);
       }
@@ -34,11 +42,11 @@ export default function Login() {
       if (userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         navigate('/horses');
       } else {
-        if (from && typeof from === 'string' && from.startsWith('/proximas')) {
+        if (from && typeof from === 'string' && from.startsWith('/')) {
           navigate(from);
-        } else {
-          navigate('/proximas');
+          return;
         }
+        navigate('/proximas');
       }
     } catch (err) {
       setError(getErrorMessage(err.code));
@@ -142,6 +150,35 @@ VITE_FIREBASE_APP_ID=1:123:web:abc123`}</pre>
               minLength={6}
             />
           </div>
+
+          {isSignup && (
+            <>
+              <div className="form-group">
+                <label htmlFor="handicap">Handicap</label>
+                <input
+                  type="number"
+                  id="handicap"
+                  value={handicap}
+                  onChange={(e) => setHandicap(e.target.value)}
+                  min={-2}
+                  max={10}
+                  step={0.5}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="description">Descripción (opcional)</label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ej: Posición, experiencia, preferencias..."
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Por favor espera...' : (isSignup ? 'Crear cuenta' : 'Iniciar sesión')}
