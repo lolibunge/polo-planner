@@ -39,7 +39,19 @@ export default function PublicPractices() {
   const loading = practicesLoading || playersLoading;
 
   const normalizedUserEmail = (user?.email || '').trim().toLowerCase();
-  const linkedPlayer = players.find(p => (p.email || '').trim().toLowerCase() === normalizedUserEmail) || null;
+  const linkedPlayer = useMemo(() => {
+    const uid = user?.uid || '';
+    if (uid) {
+      const byUid = players.find(p => p.uid === uid || p.id === uid);
+      if (byUid) return byUid;
+    }
+    if (!normalizedUserEmail) return null;
+    return (
+      players.find(p => (p.emailLower || '').trim().toLowerCase() === normalizedUserEmail) ||
+      players.find(p => (p.email || '').trim().toLowerCase() === normalizedUserEmail) ||
+      null
+    );
+  }, [players, user?.uid, normalizedUserEmail]);
   const effectivePlayerId = isAdmin ? selectedPlayer : (linkedPlayer?.id || '');
 
   const handleLogout = async () => {

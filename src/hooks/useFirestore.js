@@ -219,8 +219,12 @@ export function usePlayers() {
 
 export async function addPlayer(playerData) {
   const playersRef = collection(db, `barns/${BARN_ID}/players`);
+  const email = (playerData?.email || '').trim();
+  const emailLower = email ? email.toLowerCase() : '';
   return addDoc(playersRef, {
     ...playerData,
+    ...(email ? { email } : {}),
+    ...(emailLower ? { emailLower } : {}),
     active: true,
     createdAt: serverTimestamp()
   });
@@ -228,8 +232,12 @@ export async function addPlayer(playerData) {
 
 export async function updatePlayer(playerId, playerData) {
   const playerRef = doc(db, `barns/${BARN_ID}/players`, playerId);
+  const email = (playerData?.email || '').trim();
+  const emailLower = email ? email.toLowerCase() : '';
   return updateDoc(playerRef, {
     ...playerData,
+    ...(email ? { email } : { email: '' }),
+    ...(emailLower ? { emailLower } : { emailLower: '' }),
     updatedAt: serverTimestamp()
   });
 }
