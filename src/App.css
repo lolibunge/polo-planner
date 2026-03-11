@@ -2070,6 +2070,11 @@ a:hover {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.public-practice-card.is-cancelled {
+  border-color: rgba(148, 163, 184, 0.5);
+  background: linear-gradient(180deg, rgba(100, 116, 139, 0.12), var(--color-bg-secondary));
+}
+
 .public-practice-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
@@ -2081,6 +2086,30 @@ a:hover {
   align-items: flex-start;
   margin-bottom: 16px;
   gap: 16px;
+}
+
+.public-practice-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.public-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.public-status-cancelled {
+  background: rgba(100, 116, 139, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .public-practice-info h3 {
@@ -2102,6 +2131,11 @@ a:hover {
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.confirmed-count-muted {
+  background: rgba(100, 116, 139, 0.2);
+  color: #cbd5e1;
 }
 
 .public-teams {
@@ -2228,6 +2262,12 @@ a:hover {
   font-style: italic;
 }
 
+.rsvp-hint-cancelled {
+  color: #cbd5e1;
+  font-style: normal;
+  font-weight: 600;
+}
+
 .public-footer {
   text-align: center;
   padding: 40px 20px;
@@ -2260,7 +2300,11 @@ a:hover {
   .public-practice-header {
     flex-direction: column;
   }
-  
+
+  .public-practice-meta {
+    align-items: flex-start;
+  }
+
   .confirmed-count {
     align-self: flex-start;
   }

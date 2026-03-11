@@ -11,13 +11,15 @@ import { buildPracticeWhatsAppMessage, openWhatsAppShare } from '../lib/whatsapp
 const STATUS_COLORS = {
   'planned': '#3b82f6',
   'in-progress': '#f59e0b', 
-  'completed': '#22c55e'
+  'completed': '#22c55e',
+  'cancelled-weather': '#64748b'
 };
 
 const STATUS_LABELS = {
   'planned': 'Planificado',
   'in-progress': 'En Progreso',
-  'completed': 'Completado'
+  'completed': 'Completado',
+  'cancelled-weather': 'Cancelado por clima'
 };
 
 export default function Practices() {
@@ -139,9 +141,9 @@ function PracticeCard({ practice, onDelete }) {
         </div>
         <span 
           className="status-badge"
-          style={{ backgroundColor: STATUS_COLORS[practice.status] }}
+          style={{ backgroundColor: STATUS_COLORS[practice.status] || '#64748b' }}
         >
-          {STATUS_LABELS[practice.status]}
+          {STATUS_LABELS[practice.status] || practice.status}
         </span>
       </div>
       
@@ -156,9 +158,9 @@ function PracticeCard({ practice, onDelete }) {
 
       <div className="practice-card-actions">
         <Link to={`/practices/${practice.id}`} className="btn btn-primary btn-sm">
-          {practice.status === 'completed' ? 'Ver' : 'Editar'}
+          {practice.status === 'completed' || practice.status === 'cancelled-weather' ? 'Ver' : 'Editar'}
         </Link>
-        {practice.status !== 'completed' && (
+        {practice.status !== 'completed' && practice.status !== 'cancelled-weather' && (
           <button className="btn btn-danger btn-sm" onClick={onDelete}>
             Eliminar
           </button>

@@ -13,13 +13,15 @@ import {
 const STATUS_COLORS = {
   'planned': '#3b82f6',
   'in-progress': '#f59e0b', 
-  'completed': '#22c55e'
+  'completed': '#22c55e',
+  'cancelled-weather': '#64748b'
 };
 
 const STATUS_LABELS = {
   'planned': 'Próximas',
   'in-progress': 'En Progreso',
-  'completed': 'Completada'
+  'completed': 'Completada',
+  'cancelled-weather': 'Cancelada por clima'
 };
 
 const TEAM_COLORS = {
@@ -34,7 +36,7 @@ export default function PracticeDetail() {
   const { practice, loading: practiceLoading, error: practiceError } = usePractice(id);
   const { horses, loading: horsesLoading } = useHorses();
   const { players, loading: playersLoading } = usePlayers();
-  const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
   const loading = practiceLoading || horsesLoading || playersLoading;
@@ -164,7 +166,7 @@ export default function PracticeDetail() {
   const handleCompletePractice = async () => {
     if (!confirm('¿Completar esta práctica? Esto registrará la carga de trabajo de todos los caballos asignados.')) return;
     
-    setSaving(true);
+    setSavingAction('complete');
     try {
       await completePractice(id, practice);
       navigate('/practices');
@@ -172,7 +174,24 @@ export default function PracticeDetail() {
       console.error('Error completing practice:', err);
       alert('Error al completar la práctica');
     } finally {
-      setSaving(false);
+      setSavingAction(null);
+    }
+  };
+
+  const handleCancelPracticeForWeather = async () => {
+    if (!confirm('¿Cancelar esta práctica por mal clima?')) return;
+
+    setSavingAction('cancel');
+    try {
+      await updatePractice(id, {
+        status: 'cancelled-weather',
+        cancellationReason: 'weather'
+      });
+    } catch (err) {
+      console.error('Error cancelling practice:', err);
+      alert('Error al cancelar la práctica');
+    } finally {
+      setSavingAction(null);
     }
   };
 
@@ -353,9 +372,9 @@ export default function PracticeDetail() {
           <span className="practice-date-badge">{formatDate(practice.date)}</span>
           <span 
             className="status-badge status-badge-lg"
-            style={{ backgroundColor: STATUS_COLORS[practice.status] }}
+            style={{ backgroundColor: STATUS_COLORS[practice.status] || '#64748b' }}
           >
-            {STATUS_LABELS[practice.status]}
+            {STATUS_LABELS[practice.status] || practice.status}
           </span>
         </div>
         
@@ -372,9 +391,18 @@ export default function PracticeDetail() {
             <button 
               className="btn btn-success" 
               onClick={handleCompletePractice}
-              disabled={saving}
+              disabled={savingAction !== null}
             >
-              {saving ? 'Completando...' : '✓ Completar Práctica'}
+              {savingAction === 'complete' ? 'Completando...' : '✓ Completar Práctica'}
+            </button>
+          )}
+          {isAdmin && (practice.status === 'planned' || practice.status === 'in-progress') && (
+            <button
+              className="btn btn-danger"
+              onClick={handleCancelPracticeForWeather}
+              disabled={savingAction !== null}
+            >
+              {savingAction === 'cancel' ? 'Cancelando...' : '✕ Cancelar por clima'}
             </button>
           )}
         </div>
@@ -911,6 +939,7 @@ function EditPracticeModal({ practice, practiceId, onClose }) {
               <option value="planned">Planificada</option>
               <option value="in-progress">En Progreso</option>
               <option value="completed">Completada</option>
+              <option value="cancelled-weather">Cancelada por clima</option>
             </select>
           </div>
 

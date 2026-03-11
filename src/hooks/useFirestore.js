@@ -336,7 +336,7 @@ export async function addPractice(practiceData) {
   const practicesRef = collection(db, `barns/${BARN_ID}/practices`);
   return addDoc(practicesRef, {
     ...practiceData,
-    status: 'planned', // planned | in-progress | completed
+    status: 'planned', // planned | in-progress | completed | cancelled-weather
     createdAt: serverTimestamp()
   });
 }
@@ -386,4 +386,3 @@ export async function completePractice(practiceId, practice) {
     completedAt: serverTimestamp()
   });
 }
-
