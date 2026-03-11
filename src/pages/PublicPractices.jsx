@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { usePractices, usePlayers, updatePractice } from '../hooks/useFirestore';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,26 +8,13 @@ const TEAM_COLORS = {
   B: { bg: '#dc2626ff', name: 'Equipo Rojo' }
 };
 
+const USER_VISIBLE_STATUSES = ['planned', 'in-progress', 'cancelled-weather'];
+
 export default function PublicPractices() {
   const { practices, loading: practicesLoading } = usePractices();
   const { players, loading: playersLoading } = usePlayers();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const location = useLocation();
-    if (!user) {
-      return (
-        <div className="public-practices-login">
-          <h2>Próximas Prácticas</h2>
-          <p>Debes iniciar sesión para ver las prácticas.</p>
-          <Link
-            to="/login"
-            state={{ from: location.pathname + location.search }}
-            className="btn btn-primary"
-          >
-            Iniciar sesión
-          </Link>
-        </div>
-      );
-    }
   const navigate = useNavigate();
   const practiceIdFromLink = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -36,7 +23,7 @@ export default function PublicPractices() {
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [savingPracticeId, setSavingPracticeId] = useState(null);
 
-  const loading = practicesLoading || playersLoading;
+  const loading = authLoading || practicesLoading || playersLoading;
 
   const normalizedUserEmail = (user?.email || '').trim().toLowerCase();
   const linkedPlayer = useMemo(() => {
@@ -71,11 +58,11 @@ export default function PublicPractices() {
     navigate('/perfil');
   };
 
-  // Only show upcoming practices (planned or in-progress)
+  // Show upcoming practices, including weather-cancelled ones, so players are informed.
   const upcomingPractices = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const filtered = practices
-      .filter(p => p.status === 'planned' || p.status === 'in-progress')
+      .filter(p => USER_VISIBLE_STATUSES.includes(p.status))
       .filter(p => p.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -143,6 +130,16 @@ export default function PublicPractices() {
           <p>Cargando prácticas...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
     );
   }
 
@@ -241,6 +238,7 @@ export default function PublicPractices() {
             const confirmedPlayersData = confirmedPlayers.map(id => getPlayer(id)).filter(Boolean);
             const isCurrentPlayerConfirmed = effectivePlayerId && isPlayerConfirmed(practice, effectivePlayerId);
             const isSaving = savingPracticeId === practice.id;
+            const isCancelledForWeather = practice.status === 'cancelled-weather';
 
             // Get team assignments
             const teams = practice.teams || { A: [], B: [] };
@@ -248,15 +246,25 @@ export default function PublicPractices() {
             const teamBPlayers = teams.B?.map(id => getPlayer(id)).filter(Boolean) || [];
 
             return (
-              <div key={practice.id} className="public-practice-card">
+              <div
+                key={practice.id}
+                className={`public-practice-card${isCancelledForWeather ? ' is-cancelled' : ''}`}
+              >
                 <div className="public-practice-header">
                   <div className="public-practice-info">
                     <h3>{practice.name || 'Práctica'}</h3>
                     <span className="public-practice-date">📅 {formatDate(practice.date)}</span>
                   </div>
-                  <span className="confirmed-count">
-                    ✓ {confirmedPlayers.length} confirmado{confirmedPlayers.length !== 1 ? 's' : ''}
-                  </span>
+                  <div className="public-practice-meta">
+                    {isCancelledForWeather && (
+                      <span className="public-status public-status-cancelled">
+                        Cancelada por clima
+                      </span>
+                    )}
+                    <span className={`confirmed-count${isCancelledForWeather ? ' confirmed-count-muted' : ''}`}>
+                      ✓ {confirmedPlayers.length} confirmado{confirmedPlayers.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Teams if assigned */}
@@ -310,7 +318,11 @@ export default function PublicPractices() {
 
                 {/* RSVP button */}
                 <div className="rsvp-section">
-                  {effectivePlayerId ? (
+                  {isCancelledForWeather ? (
+                    <p className="rsvp-hint rsvp-hint-cancelled">
+                      Esta práctica fue cancelada por mal clima.
+                    </p>
+                  ) : effectivePlayerId ? (
                     <button 
                       className={`btn btn-rsvp ${isCurrentPlayerConfirmed ? 'confirmed' : ''}`}
                       onClick={() => handleConfirmAttendance(practice)}
@@ -336,11 +348,9 @@ export default function PublicPractices() {
 
       <footer className="public-footer">
         <p>Polo Planner</p>
-        {isAdmin ? (
+        {isAdmin && (
           <Link to="/practices" className="admin-link">🔐 Administrar</Link>
-        ) : !user ? (
-          <Link to="/login" className="admin-link">🔐 Iniciar sesión</Link>
-        ) : null}
+        )}
       </footer>
     </div>
   );

@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { 
   onAuthStateChanged, 
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   signInWithEmailAndPassword, 
   signOut,
   createUserWithEmailAndPassword 
@@ -140,6 +143,20 @@ async function ensurePlayerRecordForUser(firebaseUser, profile = {}) {
   }
 }
 
+async function ensureAuthPersistence() {
+  if (!auth) return;
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (localErr) {
+    console.warn('Local auth persistence unavailable, falling back to session persistence.', localErr);
+    try {
+      await setPersistence(auth, browserSessionPersistence);
+    } catch (sessionErr) {
+      console.warn('Session auth persistence unavailable.', sessionErr);
+    }
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +168,10 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
+
+    ensureAuthPersistence().catch((err) => {
+      console.warn('Could not initialize auth persistence:', err);
+    });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -176,11 +197,13 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     if (!auth) throw new Error('Firebase not configured');
+    await ensureAuthPersistence();
     return signInWithEmailAndPassword(auth, email, password);
   };
 
   const signup = async (email, password, profile = {}) => {
     if (!auth) throw new Error('Firebase not configured');
+    await ensureAuthPersistence();
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     // Best-effort: create/link a Player record so the user can RSVP immediately.
     ensurePlayerRecordForUser(cred.user, profile).catch((err) => {

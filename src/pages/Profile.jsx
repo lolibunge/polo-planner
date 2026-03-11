@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { usePlayers, updatePlayer } from '../hooks/useFirestore';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Profile() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const { players, loading: playersLoading } = usePlayers();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -13,18 +13,6 @@ export default function Profile() {
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  if (!user) {
-    return (
-      <div className="public-practices-login">
-        <h2>Mi perfil</h2>
-        <p>Debes iniciar sesión para ver tu perfil.</p>
-        <Link to="/login" state={{ from: location.pathname + location.search }} className="btn btn-primary">
-          Iniciar sesión
-        </Link>
-      </div>
-    );
-  }
 
   useEffect(() => {
     if (isAdmin) navigate('/horses');
@@ -83,7 +71,7 @@ export default function Profile() {
     }
   };
 
-  if (playersLoading) {
+  if (authLoading || playersLoading) {
     return (
       <div className="public-page">
         <div className="loading-container">
@@ -91,6 +79,16 @@ export default function Profile() {
           <p>Cargando perfil...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
     );
   }
 
