@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { usePractices, usePlayers, updatePractice } from '../hooks/useFirestore';
+import { usePractices, usePlayers, useHorses, updatePractice } from '../hooks/useFirestore';
 import { useAuth } from '../contexts/AuthContext';
 
 const TEAM_COLORS = {
@@ -13,6 +13,7 @@ const USER_VISIBLE_STATUSES = ['planned', 'in-progress', 'cancelled-weather'];
 export default function PublicPractices() {
   const { practices, loading: practicesLoading } = usePractices();
   const { players, loading: playersLoading } = usePlayers();
+  const { horses, loading: horsesLoading } = useHorses();
   const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,8 +23,10 @@ export default function PublicPractices() {
   }, [location.search]);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [savingPracticeId, setSavingPracticeId] = useState(null);
+  const [expandedPracticeId, setExpandedPracticeId] = useState(null);
+  const pageClassName = isAdmin ? 'public-page public-page-admin' : 'public-page';
 
-  const loading = authLoading || practicesLoading || playersLoading;
+  const loading = authLoading || practicesLoading || playersLoading || horsesLoading;
 
   const normalizedUserEmail = (user?.email || '').trim().toLowerCase();
   const linkedPlayer = useMemo(() => {
@@ -74,6 +77,7 @@ export default function PublicPractices() {
   }, [practices, practiceIdFromLink]);
 
   const getPlayer = (playerId) => players.find(p => p.id === playerId);
+  const getHorse = (horseId) => horses.find(h => h.id === horseId);
 
   const isPlayerConfirmed = (practice, playerId) => {
     return practice.confirmedPlayers?.includes(playerId);
@@ -124,7 +128,7 @@ export default function PublicPractices() {
 
   if (loading) {
     return (
-      <div className="public-page">
+      <div className={pageClassName}>
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Cargando prácticas...</p>
@@ -144,7 +148,7 @@ export default function PublicPractices() {
   }
 
   return (
-    <div className="public-page">
+    <div className={pageClassName}>
       <header className="public-header">
         <h1>🏇 Próximas Prácticas</h1>
         <p>Confirma tu asistencia a las prácticas</p>
@@ -239,11 +243,15 @@ export default function PublicPractices() {
             const isCurrentPlayerConfirmed = effectivePlayerId && isPlayerConfirmed(practice, effectivePlayerId);
             const isSaving = savingPracticeId === practice.id;
             const isCancelledForWeather = practice.status === 'cancelled-weather';
+            const isExpanded = expandedPracticeId === practice.id;
 
             // Get team assignments
             const teams = practice.teams || { A: [], B: [] };
             const teamAPlayers = teams.A?.map(id => getPlayer(id)).filter(Boolean) || [];
             const teamBPlayers = teams.B?.map(id => getPlayer(id)).filter(Boolean) || [];
+            const orderedPlayers = [...teamAPlayers, ...teamBPlayers];
+            const hasHorsePlan = orderedPlayers.length > 0 && (practice.chukkers?.length || 0) > 0;
+            const canViewHorsePlan = hasHorsePlan && (isAdmin || Boolean(isCurrentPlayerConfirmed));
 
             return (
               <div
@@ -266,6 +274,64 @@ export default function PublicPractices() {
                     </span>
                   </div>
                 </div>
+
+                {canViewHorsePlan && (
+                  <button
+                    type="button"
+                    className="public-toggle-details-btn"
+                    onClick={() =>
+                      setExpandedPracticeId((current) => (current === practice.id ? null : practice.id))
+                    }
+                    aria-expanded={isExpanded}
+                  >
+                    {isExpanded ? 'Ocultar caballos por jugador' : 'Ver caballos por jugador'}
+                  </button>
+                )}
+
+                {canViewHorsePlan && isExpanded && (
+                  <div className="public-horses-plan">
+                    <h4>Caballos por Jugador</h4>
+                    <div className="public-horses-columns">
+                      {orderedPlayers.map((player) => {
+                        const team = teams.A?.includes(player.id) ? 'A' : 'B';
+                        const horseRows = (practice.chukkers || []).map((chukker) => {
+                          const assignment = chukker.assignments?.find(a => a.playerId === player.id);
+                          const horse = assignment?.horseId ? getHorse(assignment.horseId) : null;
+                          return {
+                            key: `${player.id}-${chukker.number}`,
+                            chukkerNumber: chukker.number,
+                            horseName: horse?.name || 'Sin asignar'
+                          };
+                        });
+
+                        return (
+                          <div
+                            key={player.id}
+                            className={`public-horses-column ${team === 'A' ? 'team-a' : 'team-b'}`}
+                          >
+                            <div className="public-horses-player">
+                              <span
+                                className="team-dot"
+                                style={{ background: team === 'A' ? TEAM_COLORS.A.bg : TEAM_COLORS.B.bg }}
+                              ></span>
+                              <span>{player.name}</span>
+                            </div>
+                            <ul className="public-horses-list">
+                              {horseRows.map((row) => (
+                                <li key={row.key} className="public-horses-item">
+                                  <span className="public-horses-chukker">Chukker {row.chukkerNumber}</span>
+                                  <span className={`public-horses-name${row.horseName === 'Sin asignar' ? ' is-unassigned' : ''}`}>
+                                    {row.horseName}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Teams if assigned */}
                 {(teamAPlayers.length > 0 || teamBPlayers.length > 0) && (

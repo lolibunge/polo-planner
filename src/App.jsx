@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -12,13 +13,36 @@ import PublicPractices from './pages/PublicPractices';
 import Profile from './pages/Profile';
 import './App.css';
 
+function ProximasRoute() {
+  const { user, isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (user && isAdmin) {
+    return (
+      <Layout>
+        <PublicPractices />
+      </Layout>
+    );
+  }
+
+  return <PublicPractices />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public route - no login required */}
-          <Route path="/proximas" element={<PublicPractices />} />
+          <Route path="/proximas" element={<ProximasRoute />} />
           <Route path="/perfil" element={<Profile />} />
           
           <Route path="/login" element={<Login />} />

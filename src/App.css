@@ -1938,6 +1938,13 @@ a:hover {
   padding: 20px;
 }
 
+/* When admin opens /proximas inside the main admin layout, use the normal app background. */
+.public-page-admin {
+  min-height: auto;
+  background: transparent;
+  padding: 0;
+}
+
 .public-header {
   text-align: center;
   padding: 40px 20px;
@@ -2121,6 +2128,98 @@ a:hover {
 .public-practice-date {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
+}
+
+.public-toggle-details-btn {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.public-toggle-details-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-light);
+}
+
+.public-horses-plan {
+  margin: 20px 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.public-horses-plan h4 {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.public-horses-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.public-horses-column {
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+}
+
+.public-horses-column.team-a {
+  border-color: rgba(59, 109, 246, 0.45);
+}
+
+.public-horses-column.team-b {
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
+.public-horses-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.public-horses-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.public-horses-item {
+  display: grid;
+  gap: 2px;
+}
+
+.public-horses-chukker {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.public-horses-name {
+  font-size: 0.88rem;
+  color: var(--color-text);
+}
+
+.public-horses-name.is-unassigned {
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .confirmed-count {

@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Layout() {
+export default function Layout({ children = null }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ export default function Layout() {
         </div>
       </header>
       <main className="app-main">
-        <Outlet />
+        {children || <Outlet />}
       </main>
     </div>
   );
